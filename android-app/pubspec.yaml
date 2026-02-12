@@ -1,0 +1,28 @@
+name: app_estacion_meteorologica
+description: App Android para mostrar datos de la estación meteorológica (scaffolding).
+publish_to: 'none'
+
+environment:
+  sdk: ">=2.17.0 <3.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  http: ^0.13.6
+  flutter_dotenv: ^5.0.2
+  sqflite: ^2.0.0+4
+  path: ^1.8.2
+  path_provider: ^2.0.14
+  fl_chart: ^0.60.0
+  pdf: ^3.10.1
+  printing: ^5.9.0
+  intl: ^0.18.0
+  home_widget: ^0.7.0
+  android_alarm_manager_plus: ^2.0.6
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+flutter:
+  uses-material-design: true
