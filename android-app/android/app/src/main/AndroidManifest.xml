@@ -3,7 +3,7 @@
 
     <application
         android:label="App Estacion Meteorologica"
-        android:icon="@mipmap/ic_launcher">
+        android:icon="@drawable/ic_launcher_weather">
 
         <activity
             android:name=".MainActivity"
@@ -26,11 +26,37 @@
             android:name="flutterEmbedding"
             android:value="2" />
 
-        <receiver android:name="com.example.app_estacion_meteorologica.WeatherWidgetProvider" android:exported="false">
+        <!-- Widget Pequeño -->
+        <receiver android:name="com.example.app_estacion_meteorologica.WeatherWidgetProvider" 
+                  android:exported="false"
+                  android:label="Estación Pequeño">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
             </intent-filter>
-            <meta-data android:name="android.appwidget.provider" android:resource="@xml/weather_widget_info" />
+            <meta-data android:name="android.appwidget.provider" 
+                       android:resource="@xml/widget_small_info" />
+        </receiver>
+
+        <!-- Widget Mediano -->
+        <receiver android:name="com.example.app_estacion_meteorologica.WeatherWidgetProviderMedium" 
+                  android:exported="false"
+                  android:label="Estación Mediano">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data android:name="android.appwidget.provider" 
+                       android:resource="@xml/widget_medium_info" />
+        </receiver>
+
+        <!-- Widget Grande -->
+        <receiver android:name="com.example.app_estacion_meteorologica.WeatherWidgetProviderLarge" 
+                  android:exported="false"
+                  android:label="Estación Grande">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data android:name="android.appwidget.provider" 
+                       android:resource="@xml/widget_large_info" />
         </receiver>
 
     </application>

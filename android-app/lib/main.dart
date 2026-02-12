@@ -12,7 +12,7 @@ Future<void> _maybeSeedDefaultStation() async {
     final defaultApi = dotenv.env['WUNDERGROUND_API_KEY'] ?? '';
     final defaultStation = dotenv.env['WUNDERGROUND_STATION_ID'] ?? '';
     if (defaultApi.isNotEmpty && defaultStation.isNotEmpty) {
-      await repo.create(Station(name: 'Default', stationId: defaultStation, apiKey: defaultApi));
+      await repo.create(Station(name: defaultStation, stationId: defaultStation, apiKey: defaultApi));
     }
   }
 }

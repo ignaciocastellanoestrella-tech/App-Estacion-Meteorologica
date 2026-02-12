@@ -2,29 +2,42 @@
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="wrap_content"
     android:layout_height="wrap_content"
-    android:padding="8dp">
+    android:padding="12dp"
+    android:background="@drawable/widget_bg">
 
     <LinearLayout
         android:orientation="vertical"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:background="@android:color/transparent">
+        android:gravity="center"
+        android:padding="8dp">
+
+        <ImageView
+            android:id="@+id/w_icon"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:src="@android:drawable/ic_menu_day"
+            android:tint="#FFFFFF"
+            android:layout_marginBottom="4dp" />
 
         <TextView
             android:id="@+id/w_temp"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:textSize="18sp"
+            android:textSize="28sp"
+            android:textStyle="bold"
             android:textColor="#FFFFFF"
             android:text="--°C" />
 
         <TextView
-            android:id="@+id/w_cond"
+            android:id="@+id/w_station"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:textSize="12sp"
-            android:textColor="#FFFFFF"
-            android:text="Cond" />
+            android:textSize="10sp"
+            android:textColor="#CCFFFFFF"
+            android:text="Estación"
+            android:layout_marginTop="2dp" />
+
     </LinearLayout>
 
 </FrameLayout>

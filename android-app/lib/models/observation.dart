@@ -10,6 +10,9 @@ class Observation {
   final String? windDir;
   final double? precip;
   final double? pressure;
+  final double? humidity;
+  final double? tempIndoor;
+  final double? humidityIndoor;
 
   Observation({
     this.id,
@@ -23,6 +26,9 @@ class Observation {
     this.windDir,
     this.precip,
     this.pressure,
+    this.humidity,
+    this.tempIndoor,
+    this.humidityIndoor,
   });
 
   Map<String, dynamic> toMap() {
@@ -38,6 +44,9 @@ class Observation {
       'wind_dir': windDir,
       'precip': precip,
       'pressure': pressure,
+      'humidity': humidity,
+      'temp_indoor': tempIndoor,
+      'humidity_indoor': humidityIndoor,
     };
   }
 
@@ -53,5 +62,8 @@ class Observation {
         windDir: m['wind_dir'] as String?,
         precip: (m['precip'] as num?)?.toDouble(),
         pressure: (m['pressure'] as num?)?.toDouble(),
+        humidity: (m['humidity'] as num?)?.toDouble(),
+        tempIndoor: (m['temp_indoor'] as num?)?.toDouble(),
+        humidityIndoor: (m['humidity_indoor'] as num?)?.toDouble(),
       );
 }

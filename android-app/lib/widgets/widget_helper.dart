@@ -10,6 +10,9 @@ class WidgetHelper {
     required double windSpeed,
     required double precip,
     required String stationName,
+    double? humidity,
+    double? pressure,
+    double? precipRate,
   }) async {
     try {
       await HomeWidget.saveWidgetData<String>('condition', condition);
@@ -17,6 +20,15 @@ class WidgetHelper {
       await HomeWidget.saveWidgetData<String>('wind', windSpeed.toStringAsFixed(1));
       await HomeWidget.saveWidgetData<String>('precip', precip.toStringAsFixed(1));
       await HomeWidget.saveWidgetData<String>('temp', temperature.toStringAsFixed(1));
+      if (humidity != null) {
+        await HomeWidget.saveWidgetData<String>('humidity', humidity.toStringAsFixed(1));
+      }
+      if (pressure != null) {
+        await HomeWidget.saveWidgetData<String>('pressure', pressure.toStringAsFixed(2));
+      }
+      if (precipRate != null) {
+        await HomeWidget.saveWidgetData<String>('precipRate', precipRate.toStringAsFixed(1));
+      }
       // Request widget update (native side should implement AppWidgetProvider to listen)
       await HomeWidget.updateWidget(name: 'WeatherWidgetProvider', iOSName: '');
     } catch (e) {
@@ -32,6 +44,7 @@ class WidgetHelper {
       await HomeWidget.saveWidgetData<String>('wind', '');
       await HomeWidget.saveWidgetData<String>('precip', '');
       await HomeWidget.saveWidgetData<String>('temp', '');
+      await HomeWidget.saveWidgetData<String>('humidity', '');
       await HomeWidget.updateWidget(name: 'WeatherWidgetProvider', iOSName: '');
     } catch (e) {}
   }

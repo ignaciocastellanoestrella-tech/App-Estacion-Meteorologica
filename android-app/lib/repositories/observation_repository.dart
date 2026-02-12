@@ -20,6 +20,9 @@ class ObservationRepository {
       windDir: o.windDir,
       precip: o.precip,
       pressure: o.pressure,
+      humidity: o.humidity,
+      tempIndoor: o.tempIndoor,
+      humidityIndoor: o.humidityIndoor,
     );
   }
 
@@ -40,7 +43,10 @@ class ObservationRepository {
         SUM(precip) as precip_total,
         MAX(precip) as precip_max,
         AVG(wind_speed) as wind_avg,
-        MAX(wind_gust) as wind_gust_max
+        MAX(wind_gust) as wind_gust_max,
+        AVG(humidity) as humidity_avg,
+        AVG(temp_indoor) as temp_indoor_avg,
+        AVG(humidity_indoor) as humidity_indoor_avg
       FROM observations
       WHERE station_id = ? AND ts >= ? AND ts <= ?
     ''', [stationDbId, fromTs, toTs]);
