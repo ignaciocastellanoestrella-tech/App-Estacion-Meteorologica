@@ -12,6 +12,21 @@ import '../widgets/widget_helper.dart';
 
 enum HistoryPeriod { day, week, month }
 
+enum WeatherKind {
+  thunder,
+  rainHeavy,
+  rainLight,
+  rain,
+  snow,
+  sleet,
+  hail,
+  fog,
+  windy,
+  partlyCloudy,
+  cloudy,
+  sunny,
+}
+
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
@@ -25,6 +40,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   final ScrollController _scrollController = ScrollController();
 
   Future<Weather>? _weatherFuture;
+  Weather? _currentWeather;
   List<Station> _stations = [];
   Station? _selected;
   bool _isRefreshing = false;
@@ -42,6 +58,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   @override
   void initState() {
     super.initState();
+    _historyCache.clear();
     _tabController = TabController(length: 2, vsync: this);
     _loadStationsAndFetch();
     _startPolling();
@@ -65,6 +82,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
       final weather = await _svc.fetchCurrent(apiKey: _selected!.apiKey, stationId: _selected!.stationId);
       setState(() {
         _weatherFuture = Future.value(weather);
+        _currentWeather = weather;
       });
       _updateWidget(weather);
     }
@@ -77,6 +95,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
           if (mounted) {
             setState(() {
               _weatherFuture = Future.value(weather);
+              _currentWeather = weather;
               _now = DateTime.now();
             });
             _updateWidget(weather);
@@ -103,6 +122,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
       final weather = await _svc.fetchCurrent(apiKey: _selected!.apiKey, stationId: _selected!.stationId);
       setState(() {
         _weatherFuture = Future.value(weather);
+        _currentWeather = weather;
         _now = DateTime.now();
       });
       _updateWidget(weather);
@@ -115,13 +135,19 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     if (_selected != null) {
       await WidgetHelper.updateWeatherWidget(
         stationName: _stationLabel(_selected!),
+        apiKey: _selected!.apiKey,
+        stationId: _selected!.stationId,
         temperature: weather.temperature,
         condition: weather.condition,
+        conditionCode: weather.conditionCode,
         humidity: weather.humidity,
         windSpeed: weather.windSpeed,
+        windDir: weather.windDir,
         precip: weather.precipToday,
         pressure: weather.pressure,
         precipRate: weather.precipRate,
+        dewPoint: weather.dewPoint,
+        isDay: _isDaytime(_now),
       );
     }
   }
@@ -177,27 +203,96 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     }
   }
 
-  Widget _weatherIcon(String condition) {
-    final c = condition.toLowerCase();
-    if (c.contains('thunder') || c.contains('storm')) {
-      return const Icon(WeatherIcons.thunderstorm, size: 80, color: Color(0xFF6B7AFA));
+  bool _isDaytime(DateTime now) {
+    final month = now.month;
+    // Aproximación para España: más horas de luz en verano.
+    if (month >= 4 && month <= 9) {
+      return now.hour >= 7 && now.hour < 21;
     }
-    if (c.contains('rain') || c.contains('shower')) {
-      return const Icon(WeatherIcons.rain, size: 80, color: Color(0xFF5BA3F5));
+    return now.hour >= 8 && now.hour < 19;
+  }
+
+  Widget _weatherIcon(Weather weather) {
+    final kind = _classifyWeather(weather);
+    final isDay = _isDaytime(_now);
+    switch (kind) {
+      case WeatherKind.thunder:
+        return const Icon(WeatherIcons.thunderstorm, size: 80, color: Color(0xFF6B7AFA));
+      case WeatherKind.rainHeavy:
+        return const Icon(WeatherIcons.rain_wind, size: 80, color: Color(0xFF4F8FEA));
+      case WeatherKind.rainLight:
+        return const Icon(WeatherIcons.raindrops, size: 80, color: Color(0xFF7FB6F6));
+      case WeatherKind.rain:
+        return const Icon(WeatherIcons.rain, size: 80, color: Color(0xFF5BA3F5));
+      case WeatherKind.snow:
+        return const Icon(WeatherIcons.snow, size: 80, color: Color(0xFF8EC5FC));
+      case WeatherKind.sleet:
+        return const Icon(WeatherIcons.rain_mix, size: 80, color: Color(0xFF9FB7FF));
+      case WeatherKind.hail:
+        return const Icon(WeatherIcons.hail, size: 80, color: Color(0xFF9CA3AF));
+      case WeatherKind.fog:
+        return const Icon(WeatherIcons.fog, size: 80, color: Color(0xFF9CA3AF));
+      case WeatherKind.windy:
+        return const Icon(WeatherIcons.strong_wind, size: 80, color: Color(0xFF6B7AFA));
+      case WeatherKind.partlyCloudy:
+        return Icon(
+          isDay ? WeatherIcons.day_cloudy : WeatherIcons.night_alt_partly_cloudy,
+          size: 80,
+          color: const Color(0xFFFFB74D),
+        );
+      case WeatherKind.cloudy:
+        return const Icon(WeatherIcons.cloudy, size: 80, color: Color(0xFF94A3B8));
+      case WeatherKind.sunny:
+        return Icon(
+          isDay ? WeatherIcons.day_sunny : WeatherIcons.night_clear,
+          size: 80,
+          color: const Color(0xFFFFA726),
+        );
     }
-    if (c.contains('snow')) {
-      return const Icon(WeatherIcons.snow, size: 80, color: Color(0xFF8EC5FC));
+  }
+
+  WeatherKind _classifyWeather(Weather weather) {
+    final text = weather.condition.toLowerCase();
+    final temp = weather.temperature;
+    final dew = weather.dewPoint;
+    final precipRate = weather.precipRate;
+    final humidity = weather.humidity;
+    final wind = weather.windSpeed;
+
+    bool has(String s) => text.contains(s);
+
+    if (has('thunder') || has('storm') || has('tormenta')) return WeatherKind.thunder;
+    if (has('hail') || has('granizo') || has('ice pellets')) return WeatherKind.hail;
+    if (has('freezing rain') || has('lluvia helada')) return WeatherKind.sleet;
+    if (has('sleet') || has('aguanieve') || has('ice rain')) return WeatherKind.sleet;
+    if (has('blizzard') || has('blowing snow')) return WeatherKind.snow;
+    if (has('snow') || has('nieve') || has('flurr')) return WeatherKind.snow;
+    if (has('fog') || has('mist') || has('niebla') || has('bruma') || has('haze') || has('hazy')) {
+      return WeatherKind.fog;
     }
-    if (c.contains('fog') || c.contains('mist')) {
-      return const Icon(WeatherIcons.fog, size: 80, color: Color(0xFF9CA3AF));
+    if (has('drizzle') || has('llovizna')) return WeatherKind.rainLight;
+    if (has('rain') || has('shower') || has('lluvia') || has('chubasco')) {
+      if (precipRate >= 2.5) return WeatherKind.rainHeavy;
+      if (precipRate >= 0.2) return WeatherKind.rainLight;
+      return WeatherKind.rain;
     }
-    if (c.contains('cloud')) {
-      return const Icon(WeatherIcons.cloudy, size: 80, color: Color(0xFF94A3B8));
+    if (has('partly') || has('parcial') || has('few clouds') || has('scattered') || has('nubes y sol')) {
+      return WeatherKind.partlyCloudy;
     }
-    if (c.contains('clear') || c.contains('sunny')) {
-      return const Icon(WeatherIcons.day_sunny, size: 80, color: Color(0xFFFFA726));
+    if (has('cloud') || has('nublado') || has('overcast') || has('cubierto')) return WeatherKind.cloudy;
+    if (has('clear') || has('sunny') || has('despejado') || has('soleado')) return WeatherKind.sunny;
+
+    if (precipRate >= 2.5) return WeatherKind.rainHeavy;
+    if (precipRate >= 0.2) {
+      if (temp <= 1.0) return WeatherKind.snow;
+      if (temp <= 2.0 && dew <= 0.5) return WeatherKind.sleet;
+      return WeatherKind.rainLight;
     }
-    return const Icon(WeatherIcons.day_cloudy, size: 80, color: Color(0xFFFFB74D));
+    if (humidity >= 95 && (temp - dew).abs() <= 1.5) return WeatherKind.fog;
+    if (wind >= 35) return WeatherKind.windy;
+    if (humidity <= 55) return WeatherKind.sunny;
+    if (humidity <= 75) return WeatherKind.partlyCloudy;
+    return WeatherKind.cloudy;
   }
 
   @override
@@ -205,8 +300,10 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     return Scaffold(
       body: FutureBuilder<Weather>(
         future: _weatherFuture,
+        initialData: _currentWeather,
         builder: (context, snapshot) {
-          if (snapshot.connectionState != ConnectionState.done) {
+          final weather = snapshot.data ?? _currentWeather;
+          if (weather == null && snapshot.connectionState != ConnectionState.done) {
             return Container(
               decoration: const BoxDecoration(
                 gradient: LinearGradient(
@@ -218,7 +315,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
               child: const Center(child: CircularProgressIndicator(color: Colors.white)),
             );
           }
-          if (snapshot.hasError) {
+          if (snapshot.hasError && weather == null) {
             return Container(
               decoration: const BoxDecoration(
                 gradient: LinearGradient(
@@ -236,7 +333,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
             );
           }
 
-          final weather = snapshot.data!;
           return Container(
             decoration: const BoxDecoration(
               gradient: LinearGradient(
@@ -254,7 +350,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                     child: TabBarView(
                       controller: _tabController,
                       children: [
-                        _buildCurrentTab(weather),
+                        _buildCurrentTab(weather!),
                         _buildHistoryTab(),
                       ],
                     ),
@@ -353,9 +449,20 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                         .map((s) => DropdownMenuItem(value: s, child: Text(_stationLabel(s))))
                         .toList(),
                     onChanged: (s) {
+                      if (s == null) return;
+                      final future = _svc.fetchCurrent(apiKey: s.apiKey, stationId: s.stationId);
                       setState(() {
                         _selected = s;
-                        _weatherFuture = _svc.fetchCurrent(apiKey: s!.apiKey, stationId: s.stationId);
+                        _weatherFuture = future;
+                      });
+                      _historyCache.clear();
+                      future.then((weather) {
+                        if (!mounted) return;
+                        setState(() {
+                          _currentWeather = weather;
+                          _now = DateTime.now();
+                        });
+                        _updateWidget(weather);
                       });
                       if (_tabController.index == 1) {
                         _loadHistory();
@@ -426,7 +533,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
             padding: const EdgeInsets.all(24.0),
             child: Column(
               children: [
-                _weatherIcon(weather.condition),
+                _weatherIcon(weather),
                 const SizedBox(height: 16),
                 Text(
                   '${weather.temperature.toStringAsFixed(1)} °C',
@@ -787,9 +894,11 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     }
     if (_historyPeriod == HistoryPeriod.week) {
       final range = _effectiveWeekRange(_historyDate, _historyWeek);
+      if (_isCurrentWeek(range)) return null;
       return '${station.stationId}|week|${_formatDateKey(range.start)}-${_formatDateKey(range.end)}';
     }
     final range = _monthRange(_historyDate);
+    if (_isCurrentMonth(_historyDate)) return null;
     return '${station.stationId}|month|${_formatDateKey(range.start)}-${_formatDateKey(range.end)}';
   }
 
@@ -803,6 +912,17 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   bool _isToday(DateTime date) {
     final now = DateTime.now();
     return date.year == now.year && date.month == now.month && date.day == now.day;
+  }
+
+  bool _isCurrentWeek(DateTimeRange range) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    return !today.isBefore(range.start) && !today.isAfter(range.end);
+  }
+
+  bool _isCurrentMonth(DateTime date) {
+    final now = DateTime.now();
+    return date.year == now.year && date.month == now.month;
   }
 
   String _dateTimeLabel(DateTime date) {

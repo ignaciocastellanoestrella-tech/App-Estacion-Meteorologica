@@ -5,9 +5,9 @@
     android:targetCellWidth="4"
     android:targetCellHeight="2"
     android:updatePeriodMillis="0"
-    android:initialLayout="@layout/widget_medium"
-    android:previewLayout="@layout/widget_medium"
-    android:previewImage="@drawable/widget_preview_medium"
+    android:initialLayout="@layout/widget_medium_transparent"
+    android:previewLayout="@layout/widget_medium_transparent"
+    android:previewImage="@drawable/widget_preview_medium_transparent"
     android:resizeMode="horizontal|vertical"
     android:widgetCategory="home_screen">
 </appwidget-provider>

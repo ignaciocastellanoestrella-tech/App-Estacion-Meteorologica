@@ -8,7 +8,7 @@
         android:orientation="vertical"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:background="@drawable/widget_bg"
+        android:background="@drawable/widget_bg_transparent"
         android:padding="12dp"
         android:gravity="center">
 
@@ -19,7 +19,11 @@
             android:textSize="12sp"
             android:textColor="#E0FFFFFF"
             android:text="--:--"
-            android:layout_marginBottom="4dp" />
+            android:layout_marginBottom="4dp"
+            android:shadowColor="#80000000"
+            android:shadowDx="0"
+            android:shadowDy="1"
+            android:shadowRadius="2" />
 
         <ImageView
             android:id="@+id/w_icon"
@@ -36,7 +40,11 @@
             android:textStyle="bold"
             android:textColor="#FFFFFF"
             android:text="--°"
-            android:layout_marginBottom="2dp" />
+            android:layout_marginBottom="2dp"
+            android:shadowColor="#80000000"
+            android:shadowDx="0"
+            android:shadowDy="1"
+            android:shadowRadius="2" />
 
         <TextView
             android:id="@+id/w_station"
@@ -46,7 +54,11 @@
             android:textColor="#CCFFFFFF"
             android:text="Estación"
             android:maxLines="1"
-            android:ellipsize="end" />
+            android:ellipsize="end"
+            android:shadowColor="#80000000"
+            android:shadowDx="0"
+            android:shadowDy="1"
+            android:shadowRadius="2" />
 
         <TextView
             android:id="@+id/w_updated"
@@ -55,7 +67,11 @@
             android:textSize="9sp"
             android:textColor="#B3FFFFFF"
             android:text="Act. --:--"
-            android:layout_marginTop="4dp" />
+            android:layout_marginTop="4dp"
+            android:shadowColor="#80000000"
+            android:shadowDx="0"
+            android:shadowDy="1"
+            android:shadowRadius="2" />
 
     </LinearLayout>
 

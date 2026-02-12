@@ -1,6 +1,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.example.app_estacion_meteorologica">
 
+    <uses-permission android:name="android.permission.INTERNET" />
+
     <application
         android:label="App Estacion Meteorologica"
         android:icon="@drawable/ic_launcher_weather">
@@ -29,7 +31,7 @@
         <!-- Widget Pequeño -->
         <receiver android:name="com.example.app_estacion_meteorologica.WeatherWidgetProvider" 
                   android:exported="false"
-                  android:label="Estación Pequeño">
+                  android:label="Estacion - Pequeno">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
             </intent-filter>
@@ -40,7 +42,7 @@
         <!-- Widget Mediano -->
         <receiver android:name="com.example.app_estacion_meteorologica.WeatherWidgetProviderMedium" 
                   android:exported="false"
-                  android:label="Estación Mediano">
+                  android:label="Estacion - Mediano">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
             </intent-filter>
@@ -51,12 +53,45 @@
         <!-- Widget Grande -->
         <receiver android:name="com.example.app_estacion_meteorologica.WeatherWidgetProviderLarge" 
                   android:exported="false"
-                  android:label="Estación Grande">
+                  android:label="Estacion - Grande">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
             </intent-filter>
             <meta-data android:name="android.appwidget.provider" 
                        android:resource="@xml/widget_large_info" />
+        </receiver>
+
+        <!-- Widget Pequeño (Transparente) -->
+        <receiver android:name="com.example.app_estacion_meteorologica.WeatherWidgetProviderTransparentSmall" 
+                  android:exported="false"
+                  android:label="Estacion (Transparente) - Pequeno">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data android:name="android.appwidget.provider" 
+                       android:resource="@xml/widget_small_transparent_info" />
+        </receiver>
+
+        <!-- Widget Mediano (Transparente) -->
+        <receiver android:name="com.example.app_estacion_meteorologica.WeatherWidgetProviderTransparentMedium" 
+                  android:exported="false"
+                  android:label="Estacion (Transparente) - Mediano">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data android:name="android.appwidget.provider" 
+                       android:resource="@xml/widget_medium_transparent_info" />
+        </receiver>
+
+        <!-- Widget Grande (Transparente) -->
+        <receiver android:name="com.example.app_estacion_meteorologica.WeatherWidgetProviderTransparentLarge" 
+                  android:exported="false"
+                  android:label="Estacion (Transparente) - Grande">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data android:name="android.appwidget.provider" 
+                       android:resource="@xml/widget_large_transparent_info" />
         </receiver>
 
     </application>

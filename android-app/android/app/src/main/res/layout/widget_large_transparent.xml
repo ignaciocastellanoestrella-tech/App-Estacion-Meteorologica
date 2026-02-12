@@ -8,11 +8,10 @@
         android:orientation="vertical"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:background="@drawable/widget_bg"
+        android:background="@drawable/widget_bg_transparent"
         android:padding="16dp"
         android:paddingBottom="20dp">
 
-        <!-- Fecha y hora -->
         <LinearLayout
             android:orientation="horizontal"
             android:layout_width="match_parent"
@@ -26,7 +25,11 @@
                 android:layout_height="wrap_content"
                 android:textSize="12sp"
                 android:textColor="#DDFFFFFF"
-                android:text="Jueves, 12 Feb" />
+                android:text="Jueves, 12 Feb"
+                android:shadowColor="#80000000"
+                android:shadowDx="0"
+                android:shadowDy="1"
+                android:shadowRadius="2" />
 
             <TextView
                 android:id="@+id/w_time"
@@ -34,7 +37,11 @@
                 android:layout_height="wrap_content"
                 android:textSize="12sp"
                 android:textColor="#DDFFFFFF"
-                android:text="--:--" />
+                android:text="--:--"
+                android:shadowColor="#80000000"
+                android:shadowDx="0"
+                android:shadowDy="1"
+                android:shadowRadius="2" />
 
             <ImageView
                 android:id="@+id/w_refresh"
@@ -47,7 +54,6 @@
 
         </LinearLayout>
 
-        <!-- Header principal -->
         <LinearLayout
             android:orientation="horizontal"
             android:layout_width="match_parent"
@@ -75,7 +81,11 @@
                     android:textSize="52sp"
                     android:textStyle="bold"
                     android:textColor="#FFFFFF"
-                    android:text="--°" />
+                    android:text="--°"
+                    android:shadowColor="#80000000"
+                    android:shadowDx="0"
+                    android:shadowDy="1"
+                    android:shadowRadius="2" />
 
                 <TextView
                     android:id="@+id/w_station"
@@ -85,7 +95,11 @@
                     android:textColor="#CCFFFFFF"
                     android:text="Estación"
                     android:maxLines="1"
-                    android:ellipsize="end" />
+                    android:ellipsize="end"
+                    android:shadowColor="#80000000"
+                    android:shadowDx="0"
+                    android:shadowDy="1"
+                    android:shadowRadius="2" />
 
                 <TextView
                     android:id="@+id/w_updated"
@@ -94,13 +108,16 @@
                     android:textSize="10sp"
                     android:textColor="#B3FFFFFF"
                     android:text="Act. --:--"
-                    android:layout_marginTop="4dp" />
+                    android:layout_marginTop="4dp"
+                    android:shadowColor="#80000000"
+                    android:shadowDx="0"
+                    android:shadowDy="1"
+                    android:shadowRadius="2" />
 
             </LinearLayout>
 
         </LinearLayout>
 
-        <!-- Fila 1: Humedad y Precipitación -->
         <LinearLayout
             android:orientation="horizontal"
             android:layout_width="match_parent"
@@ -132,7 +149,11 @@
                             android:layout_height="wrap_content"
                             android:text="Humedad"
                             android:textSize="9sp"
-                            android:textColor="#BBFFFFFF" />
+                            android:textColor="#BBFFFFFF"
+                            android:shadowColor="#80000000"
+                            android:shadowDx="0"
+                            android:shadowDy="1"
+                            android:shadowRadius="2" />
                         <TextView
                             android:id="@+id/w_hum"
                             android:layout_width="wrap_content"
@@ -140,7 +161,11 @@
                             android:textColor="#FFFFFF"
                             android:textSize="15sp"
                             android:textStyle="bold"
-                            android:text="--%" />
+                            android:text="--%"
+                            android:shadowColor="#80000000"
+                            android:shadowDx="0"
+                            android:shadowDy="1"
+                            android:shadowRadius="2" />
                     </LinearLayout>
                 </LinearLayout>
                 <LinearLayout
@@ -163,7 +188,11 @@
                             android:layout_height="wrap_content"
                             android:text="Viento"
                             android:textSize="9sp"
-                            android:textColor="#BBFFFFFF" />
+                            android:textColor="#BBFFFFFF"
+                            android:shadowColor="#80000000"
+                            android:shadowDx="0"
+                            android:shadowDy="1"
+                            android:shadowRadius="2" />
                         <TextView
                             android:id="@+id/w_wind"
                             android:layout_width="wrap_content"
@@ -171,7 +200,11 @@
                             android:textColor="#FFFFFF"
                             android:textSize="15sp"
                             android:textStyle="bold"
-                            android:text="0 km/h" />
+                            android:text="0 km/h"
+                            android:shadowColor="#80000000"
+                            android:shadowDx="0"
+                            android:shadowDy="1"
+                            android:shadowRadius="2" />
                     </LinearLayout>
                 </LinearLayout>
             </LinearLayout>
@@ -200,7 +233,11 @@
                             android:layout_height="wrap_content"
                             android:text="Precipitación"
                             android:textSize="9sp"
-                            android:textColor="#BBFFFFFF" />
+                            android:textColor="#BBFFFFFF"
+                            android:shadowColor="#80000000"
+                            android:shadowDx="0"
+                            android:shadowDy="1"
+                            android:shadowRadius="2" />
                         <TextView
                             android:id="@+id/w_precip"
                             android:layout_width="wrap_content"
@@ -208,7 +245,11 @@
                             android:textColor="#FFFFFF"
                             android:textSize="15sp"
                             android:textStyle="bold"
-                            android:text="0 mm" />
+                            android:text="0 mm"
+                            android:shadowColor="#80000000"
+                            android:shadowDx="0"
+                            android:shadowDy="1"
+                            android:shadowRadius="2" />
                     </LinearLayout>
                 </LinearLayout>
                 <LinearLayout
@@ -231,7 +272,11 @@
                             android:layout_height="wrap_content"
                             android:text="Tasa de precipitación"
                             android:textSize="9sp"
-                            android:textColor="#BBFFFFFF" />
+                            android:textColor="#BBFFFFFF"
+                            android:shadowColor="#80000000"
+                            android:shadowDx="0"
+                            android:shadowDy="1"
+                            android:shadowRadius="2" />
                         <TextView
                             android:id="@+id/w_precip_rate"
                             android:layout_width="wrap_content"
@@ -239,14 +284,17 @@
                             android:textColor="#FFFFFF"
                             android:textSize="15sp"
                             android:textStyle="bold"
-                            android:text="0 mm/hr" />
+                            android:text="0 mm/hr"
+                            android:shadowColor="#80000000"
+                            android:shadowDx="0"
+                            android:shadowDy="1"
+                            android:shadowRadius="2" />
                     </LinearLayout>
                 </LinearLayout>
             </LinearLayout>
 
         </LinearLayout>
 
-        <!-- Fila 2: Viento y Presión -->
         <LinearLayout
             android:orientation="horizontal"
             android:layout_width="match_parent"
@@ -273,7 +321,11 @@
                         android:layout_height="wrap_content"
                         android:text="Presión"
                         android:textSize="9sp"
-                        android:textColor="#BBFFFFFF" />
+                        android:textColor="#BBFFFFFF"
+                        android:shadowColor="#80000000"
+                        android:shadowDx="0"
+                        android:shadowDy="1"
+                        android:shadowRadius="2" />
                     <TextView
                         android:id="@+id/w_pressure"
                         android:layout_width="wrap_content"
@@ -281,7 +333,11 @@
                         android:textColor="#FFFFFF"
                         android:textSize="15sp"
                         android:textStyle="bold"
-                        android:text="-- hPa" />
+                        android:text="-- hPa"
+                        android:shadowColor="#80000000"
+                        android:shadowDx="0"
+                        android:shadowDy="1"
+                        android:shadowRadius="2" />
                 </LinearLayout>
             </LinearLayout>
 

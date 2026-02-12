@@ -9,6 +9,7 @@ class Weather {
   final double precipRate;
   final double pressure;
   final String condition;
+  final int? conditionCode;
   final double humidity;
   final double? tempIndoor;
   final double? humidityIndoor;
@@ -24,6 +25,7 @@ class Weather {
     required this.precipRate,
     required this.pressure,
     required this.condition,
+    this.conditionCode,
     required this.humidity,
     this.tempIndoor,
     this.humidityIndoor,
@@ -39,6 +41,14 @@ class Weather {
   }
 
   factory Weather.fromObservation(Map<String, dynamic> obs) {
+    final conditionText = obs['wxPhraseLong']?.toString() ??
+        obs['wxPhraseShort']?.toString() ??
+        obs['weather']?.toString() ??
+        obs['obsType']?.toString() ??
+        'Unknown';
+    final conditionCode = _intNullable(
+      obs['iconCode'] ?? obs['iconCodeExtended'] ?? obs['wxPhraseCode'] ?? obs['conditionCode'],
+    );
     return Weather(
       temperature: _num(obs['metric']?['temp'] ?? obs['temp']),
       feelsLike: _num(obs['metric']?['heatIndex'] ?? obs['feelslike']),
@@ -49,7 +59,8 @@ class Weather {
       precipToday: _num(obs['metric']?['precipTotal'] ?? obs['precip_total']),
       precipRate: _num(obs['metric']?['precipRate'] ?? obs['precip_rate']),
       pressure: _num(obs['metric']?['pressure'] ?? obs['pressure']),
-      condition: obs['weather']?.toString() ?? obs['obsType']?.toString() ?? 'Unknown',
+      condition: conditionText,
+      conditionCode: conditionCode,
       humidity: _num(obs['humidity']),
       tempIndoor: _numNullable(obs['metric']?['tempIndoor'] ?? obs['tempIndoor']),
       humidityIndoor: _numNullable(obs['humidityIndoor']),
@@ -66,5 +77,12 @@ class Weather {
     if (v == null) return null;
     if (v is num) return v.toDouble();
     return double.tryParse(v.toString());
+  }
+
+  static int? _intNullable(dynamic v) {
+    if (v == null) return null;
+    if (v is int) return v;
+    if (v is num) return v.toInt();
+    return int.tryParse(v.toString());
   }
 }
