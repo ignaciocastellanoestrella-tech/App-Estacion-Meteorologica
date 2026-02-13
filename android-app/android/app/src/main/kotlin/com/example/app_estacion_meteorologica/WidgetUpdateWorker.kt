@@ -120,9 +120,27 @@ class WidgetUpdateWorker(
             val temp = metric.optDouble("temp", Double.NaN)
             val windSpeed = metric.optDouble("windSpeed", Double.NaN)
             val pressure = metric.optDouble("pressure", Double.NaN)
-            val precipTotal = metric.optDouble("precipTotal", Double.NaN)
-            val precipRate = metric.optDouble("precipRate", Double.NaN)
+            var precipTotal = metric.optDouble("precipTotal", Double.NaN)
+            var precipRate = metric.optDouble("precipRate", Double.NaN)
             val dewPoint = metric.optDouble("dewpt", Double.NaN)
+
+            // Adjust precipitation using today's hourly data
+            try {
+                val hourlyPrecip = fetchTodayHourlyPrecip(apiKey, stationId)
+                val hourlyPrecipTotal = hourlyPrecip.optDouble("precipTotal", 0.0)
+                val hourlyPrecipRate = hourlyPrecip.optDouble("precipRate", 0.0)
+                
+                // Use hourly value if greater than current
+                if (hourlyPrecipTotal > (precipTotal.takeIf { !it.isNaN() } ?: 0.0)) {
+                    precipTotal = hourlyPrecipTotal
+                }
+                if (hourlyPrecipRate > (precipRate.takeIf { !it.isNaN() } ?: 0.0)) {
+                    precipRate = hourlyPrecipRate
+                }
+            } catch (e: Exception) {
+                // Keep current values if hourly fetch fails
+                e.printStackTrace()
+            }
 
             val now = java.util.Calendar.getInstance()
             val updatedTime = String.format(Locale.US, "%02d:%02d", now.get(java.util.Calendar.HOUR_OF_DAY), now.get(java.util.Calendar.MINUTE))
@@ -142,6 +160,47 @@ class WidgetUpdateWorker(
             if (!humidity.isNaN()) editor.putString("humidity", formatOneDecimal(humidity))
             if (!windDir.isNaN()) editor.putString("windDir", formatOneDecimal(windDir))
             editor.apply()
+        }
+    }
+
+    private fun fetchTodayHourlyPrecip(apiKey: String, stationId: String): JSONObject {
+        val now = java.util.Calendar.getInstance()
+        val year = now.get(java.util.Calendar.YEAR)
+        val month = now.get(java.util.Calendar.MONTH) + 1
+        val day = now.get(java.util.Calendar.DAY_OF_MONTH)
+        val dateStr = String.format(Locale.US, "%04d%02d%02d", year, month, day)
+
+        val url = "https://api.weather.com/v2/pws/history/hourly" +
+            "?apiKey=$apiKey&stationId=$stationId&format=json&units=m&date=$dateStr&numericPrecision=decimal"
+
+        val connection = (URL(url).openConnection() as HttpURLConnection).apply {
+            connectTimeout = 8000
+            readTimeout = 8000
+            requestMethod = "GET"
+        }
+
+        return connection.inputStream.use { stream ->
+            val body = stream.bufferedReader().readText()
+            val json = JSONObject(body)
+            val observations = json.optJSONArray("observations") ?: return@use JSONObject()
+
+            var maxPrecip = 0.0
+            var maxPrecipRate = 0.0
+
+            for (i in 0 until observations.length()) {
+                val obs = observations.optJSONObject(i) ?: continue
+                val metric = obs.optJSONObject("metric") ?: continue
+                val precip = metric.optDouble("precipTotal", 0.0)
+                val precipRate = metric.optDouble("precipRate", 0.0)
+                
+                if (precip > maxPrecip) maxPrecip = precip
+                if (precipRate > maxPrecipRate) maxPrecipRate = precipRate
+            }
+
+            JSONObject().apply {
+                put("precipTotal", maxPrecip)
+                put("precipRate", maxPrecipRate)
+            }
         }
     }
 

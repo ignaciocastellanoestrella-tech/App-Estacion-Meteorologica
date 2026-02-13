@@ -108,12 +108,13 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     try {
       final weather = await future;
       if (!mounted) return;
+      final adjustedWeather = await _adjustCurrentPrecipitation(weather);
       setState(() {
-        _weatherFuture = Future.value(weather);
-        _currentWeather = weather;
+        _weatherFuture = Future.value(adjustedWeather);
+        _currentWeather = adjustedWeather;
         _lastUpdated = DateTime.now();
       });
-      _updateWidget(weather);
+      _updateWidget(adjustedWeather);
     } catch (e) {
       if (!mounted) return;
       setState(() {
@@ -130,13 +131,14 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
         try {
           final weather = await _svc.fetchCurrent(apiKey: _selected!.apiKey, stationId: _selected!.stationId);
           if (!mounted) return;
+          final adjustedWeather = await _adjustCurrentPrecipitation(weather);
           setState(() {
-            _weatherFuture = Future.value(weather);
-            _currentWeather = weather;
+            _weatherFuture = Future.value(adjustedWeather);
+            _currentWeather = adjustedWeather;
             _now = DateTime.now();
             _lastUpdated = DateTime.now();
           });
-          _updateWidget(weather);
+          _updateWidget(adjustedWeather);
         } catch (_) {
           // Ignore background polling errors to avoid spamming the user.
         }
@@ -151,12 +153,12 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   void _startClock() {
     _clockTimer?.cancel();
     final now = DateTime.now();
-    final secondsToNextMinute = 60 - now.second;
-    _clockTimer = Timer(Duration(seconds: secondsToNextMinute == 0 ? 60 : secondsToNextMinute), () {
+    final msToNextSecond = 1000 - now.millisecond;
+    _clockTimer = Timer(Duration(milliseconds: msToNextSecond == 0 ? 1000 : msToNextSecond), () {
       if (!mounted) return;
       setState(() => _now = DateTime.now());
       _clockTimer?.cancel();
-      _clockTimer = Timer.periodic(const Duration(minutes: 1), (_) {
+      _clockTimer = Timer.periodic(const Duration(seconds: 1), (_) {
         if (!mounted) return;
         setState(() => _now = DateTime.now());
       });
@@ -164,17 +166,23 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   }
 
   Future<void> _manualRefresh() async {
-    if (_selected == null || _isRefreshing) return;
+    if (_isRefreshing) return;
     setState(() => _isRefreshing = true);
     try {
-      final weather = await _svc.fetchCurrent(apiKey: _selected!.apiKey, stationId: _selected!.stationId);
-      setState(() {
-        _weatherFuture = Future.value(weather);
-        _currentWeather = weather;
-        _now = DateTime.now();
-        _lastUpdated = DateTime.now();
-      });
-      _updateWidget(weather);
+      if (_tabController.index == 1) {
+        await _loadHistory();
+      } else {
+        if (_selected == null) return;
+        final weather = await _svc.fetchCurrent(apiKey: _selected!.apiKey, stationId: _selected!.stationId);
+        final adjustedWeather = await _adjustCurrentPrecipitation(weather);
+        setState(() {
+          _weatherFuture = Future.value(adjustedWeather);
+          _currentWeather = adjustedWeather;
+          _now = DateTime.now();
+          _lastUpdated = DateTime.now();
+        });
+        _updateWidget(adjustedWeather);
+      }
     } catch (e) {
       _showError(_userFriendlyError(e));
     } finally {
@@ -273,11 +281,20 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     try {
       HistorySummary summary;
       if (_historyPeriod == HistoryPeriod.day) {
-        summary = await _svc.fetchHistoryDaily(
-          apiKey: _selected!.apiKey,
-          stationId: _selected!.stationId,
-          date: _historyDate,
-        );
+        try {
+          summary = await _svc.fetchHistoryHourlySummary(
+            apiKey: _selected!.apiKey,
+            stationId: _selected!.stationId,
+            date: _historyDate,
+          );
+        } catch (_) {
+          // Fallback to daily if hourly fails
+          summary = await _svc.fetchHistoryDaily(
+            apiKey: _selected!.apiKey,
+            stationId: _selected!.stationId,
+            date: _historyDate,
+          );
+        }
       } else if (_historyPeriod == HistoryPeriod.week) {
         final range = _effectiveWeekRange(_historyDate, _historyWeek);
         summary = await _svc.fetchHistoryRange(
@@ -952,14 +969,25 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                     _historyItem('Ratio máx', '${_historySummary!.precipRateMax.toStringAsFixed(1)} mm/hr', Icons.water),
                   ]),
                   const SizedBox(height: 12),
-                  _historyCard('Viento', [
-                    _historyItem('Media', '${_historySummary!.windAvg.toStringAsFixed(1)} km/h', WeatherIcons.strong_wind),
-                    _historyItem('Racha máx', '${_historySummary!.windGustMax.toStringAsFixed(1)} km/h', WeatherIcons.wind),
+                  _historyCard('Humedad', [
+                    _historyItem('Máxima', '${_historySummary!.humidityMax.toStringAsFixed(1)} %', Icons.arrow_upward),
+                    _historyItem('Mínima', '${_historySummary!.humidityMin.toStringAsFixed(1)} %', Icons.arrow_downward),
+                    _historyItem('Media', '${_historySummary!.humidityAvg.toStringAsFixed(1)} %', Icons.water_drop),
                   ]),
                   const SizedBox(height: 12),
-                  _historyCard('Otros', [
-                    _historyItem('Humedad media', '${_historySummary!.humidityAvg.toStringAsFixed(1)} %', Icons.water_drop),
-                    _historyItem('Presión media', '${_historySummary!.pressureAvg.toStringAsFixed(2)} hPa', Icons.speed),
+                  _historyCard('Presión', [
+                    _historyItem('Máxima', '${_historySummary!.pressureMax.toStringAsFixed(2)} hPa', Icons.arrow_upward),
+                    _historyItem('Mínima', '${_historySummary!.pressureMin.toStringAsFixed(2)} hPa', Icons.arrow_downward),
+                    _historyItem('Media', '${_historySummary!.pressureAvg.toStringAsFixed(2)} hPa', Icons.speed),
+                  ]),
+                  const SizedBox(height: 12),
+                  _historyCard('Viento', [
+                    _historyItem('Máxima', '${_historySummary!.windMax.toStringAsFixed(1)} km/h', Icons.arrow_upward),
+                    _historyItem('Mínima', '${_historySummary!.windMin.toStringAsFixed(1)} km/h', Icons.arrow_downward),
+                    _historyItem('Media', '${_historySummary!.windAvg.toStringAsFixed(1)} km/h', WeatherIcons.strong_wind),
+                    _historyItem('Racha máx', '${_historySummary!.windGustMax.toStringAsFixed(1)} km/h', WeatherIcons.wind),
+                    _historyItem('Racha media', '${_historySummary!.windGustAvg.toStringAsFixed(1)} km/h', Icons.air),
+                    _historyItem('Dirección', _windDirectionLabel(_historySummary!.windDirAvg.toStringAsFixed(0)), Icons.navigation),
                   ]),
                 ],
               ],
@@ -1124,6 +1152,44 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   String _weekdayLabel(int weekday) {
     const labels = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
     return labels[(weekday - 1).clamp(0, labels.length - 1)];
+  }
+
+  Future<Weather> _adjustCurrentPrecipitation(Weather weather) async {
+    if (_selected == null) return weather;
+    try {
+      final hourlyPrecip = await _svc.fetchTodayHourlyPrecip(
+        apiKey: _selected!.apiKey,
+        stationId: _selected!.stationId,
+      );
+      final precipTotal = hourlyPrecip['precipTotal'] ?? 0;
+      final precipRate = hourlyPrecip['precipRate'] ?? 0;
+      
+      // Use hourly value if greater than current, otherwise keep current
+      final finalPrecip = precipTotal > weather.precipToday ? precipTotal : weather.precipToday;
+      final finalRate = precipRate > weather.precipRate ? precipRate : weather.precipRate;
+      
+      if (finalPrecip != weather.precipToday || finalRate != weather.precipRate) {
+        return Weather(
+          temperature: weather.temperature,
+          feelsLike: weather.feelsLike,
+          dewPoint: weather.dewPoint,
+          windSpeed: weather.windSpeed,
+          windGust: weather.windGust,
+          windDir: weather.windDir,
+          precipToday: finalPrecip,
+          precipRate: finalRate,
+          pressure: weather.pressure,
+          condition: weather.condition,
+          conditionCode: weather.conditionCode,
+          humidity: weather.humidity,
+          tempIndoor: weather.tempIndoor,
+          humidityIndoor: weather.humidityIndoor,
+        );
+      }
+    } catch (_) {
+      // If adjustment fails, keep original weather
+    }
+    return weather;
   }
 
   String _windDirectionLabel(String value) {
