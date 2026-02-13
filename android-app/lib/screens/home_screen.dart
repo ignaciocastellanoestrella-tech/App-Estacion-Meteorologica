@@ -51,9 +51,12 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   bool _historyLoading = false;
   final Map<String, HistorySummary> _historyCache = {};
   DateTime _now = DateTime.now();
+  DateTime? _lastUpdated;
   Timer? _clockTimer;
   Timer? _pollTimer;
   late TabController _tabController;
+  bool _stationsLoaded = false;
+  bool _promptedForStations = false;
 
   @override
   void initState() {
@@ -76,31 +79,67 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
 
   Future _loadStationsAndFetch() async {
     _stations = await _stationRepo.getAll();
-    if (_stations.isNotEmpty) {
-      _selected = _stations.first;
-      // Fetch current weather and update widget on app start
-      final weather = await _svc.fetchCurrent(apiKey: _selected!.apiKey, stationId: _selected!.stationId);
+    if (!mounted) return;
+    setState(() => _stationsLoaded = true);
+    if (_stations.isEmpty) {
+      setState(() {
+        _selected = null;
+        _currentWeather = null;
+        _weatherFuture = null;
+        _historySummary = null;
+        _historyLoading = false;
+        _lastUpdated = null;
+      });
+      if (!_promptedForStations) {
+        _promptedForStations = true;
+        _showWelcomeAndOpenSettings();
+      }
+      return;
+    }
+    _promptedForStations = false;
+    _selected = _stations.first;
+    // Fetch current weather and update widget on app start
+    final future = _svc.fetchCurrent(apiKey: _selected!.apiKey, stationId: _selected!.stationId);
+    setState(() {
+      _weatherFuture = future;
+      _currentWeather = null;
+      _lastUpdated = null;
+    });
+    try {
+      final weather = await future;
+      if (!mounted) return;
       setState(() {
         _weatherFuture = Future.value(weather);
         _currentWeather = weather;
+        _lastUpdated = DateTime.now();
       });
       _updateWidget(weather);
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _weatherFuture = Future.error(e);
+        _currentWeather = null;
+      });
+      _showError(_userFriendlyError(e));
     }
   }
 
   void _startPolling() {
-    _pollTimer ??= Timer.periodic(const Duration(seconds: 30), (_) {
+    _pollTimer ??= Timer.periodic(const Duration(minutes: 2), (_) async {
       if (_selected != null) {
-        _svc.fetchCurrent(apiKey: _selected!.apiKey, stationId: _selected!.stationId).then((weather) {
-          if (mounted) {
-            setState(() {
-              _weatherFuture = Future.value(weather);
-              _currentWeather = weather;
-              _now = DateTime.now();
-            });
-            _updateWidget(weather);
-          }
-        });
+        try {
+          final weather = await _svc.fetchCurrent(apiKey: _selected!.apiKey, stationId: _selected!.stationId);
+          if (!mounted) return;
+          setState(() {
+            _weatherFuture = Future.value(weather);
+            _currentWeather = weather;
+            _now = DateTime.now();
+            _lastUpdated = DateTime.now();
+          });
+          _updateWidget(weather);
+        } catch (_) {
+          // Ignore background polling errors to avoid spamming the user.
+        }
       } else {
         if (mounted) {
           setState(() => _now = DateTime.now());
@@ -110,8 +149,17 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   }
 
   void _startClock() {
-    _clockTimer ??= Timer.periodic(const Duration(seconds: 30), (_) {
+    _clockTimer?.cancel();
+    final now = DateTime.now();
+    final secondsToNextMinute = 60 - now.second;
+    _clockTimer = Timer(Duration(seconds: secondsToNextMinute == 0 ? 60 : secondsToNextMinute), () {
+      if (!mounted) return;
       setState(() => _now = DateTime.now());
+      _clockTimer?.cancel();
+      _clockTimer = Timer.periodic(const Duration(minutes: 1), (_) {
+        if (!mounted) return;
+        setState(() => _now = DateTime.now());
+      });
     });
   }
 
@@ -124,11 +172,60 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
         _weatherFuture = Future.value(weather);
         _currentWeather = weather;
         _now = DateTime.now();
+        _lastUpdated = DateTime.now();
       });
       _updateWidget(weather);
+    } catch (e) {
+      _showError(_userFriendlyError(e));
     } finally {
       setState(() => _isRefreshing = false);
     }
+  }
+
+  void _showError(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message)),
+    );
+  }
+
+  String _userFriendlyError(Object? error) {
+    final text = error?.toString().toLowerCase() ?? '';
+    if (text.contains('401') || text.contains('invalid apikey')) {
+      return 'La API key no es valida. Revísala en Ajustes.';
+    }
+    if (text.contains('station') && text.contains('missing')) {
+      return 'Falta la estacion. Configúrala en Ajustes.';
+    }
+    return 'No se pudieron cargar los datos. Revisa tu conexion e intenta de nuevo.';
+  }
+
+  Future<void> _showWelcomeAndOpenSettings() async {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) return;
+      await showDialog<void>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Bienvenido'),
+          content: const Text('Para empezar, configura tu estacion en Ajustes.'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Configurar'),
+            ),
+          ],
+        ),
+      );
+      if (!mounted) return;
+      await _openSettings();
+    });
+  }
+
+  Future<void> _openSettings() async {
+    await Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => const SettingsScreen()),
+    );
+    await _loadStationsAndFetch();
   }
 
   Future<void> _updateWidget(Weather weather) async {
@@ -154,6 +251,16 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
 
   Future<void> _loadHistory() async {
     if (_selected == null) return;
+    if (_historyPeriod == HistoryPeriod.month) {
+      setState(() => _historyPeriod = HistoryPeriod.day);
+      _showError('El historial mensual esta desactivado para evitar demasiadas peticiones.');
+      return;
+    }
+    if (_historyPeriod == HistoryPeriod.week) {
+      final now = DateTime.now();
+      _historyDate = now;
+      _historyWeek = _weekIndexForDate(now);
+    }
     final cacheKey = _historyCacheKey(_selected!);
     if (cacheKey != null && _historyCache.containsKey(cacheKey)) {
       setState(() {
@@ -200,6 +307,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
         _historySummary = null;
         _historyLoading = false;
       });
+      _showError('Error al cargar el historico.');
     }
   }
 
@@ -302,6 +410,43 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
         future: _weatherFuture,
         initialData: _currentWeather,
         builder: (context, snapshot) {
+          if (_stationsLoaded && _stations.isEmpty) {
+            return Container(
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [Color(0xFF667EEA), Color(0xFF764BA2)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+              ),
+              child: Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(24.0),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        'Bienvenido',
+                        style: GoogleFonts.manrope(fontSize: 26, fontWeight: FontWeight.w800, color: Colors.white),
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        'Configura tu estacion en Ajustes para empezar.',
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.manrope(fontSize: 14, color: Colors.white70, fontWeight: FontWeight.w500),
+                      ),
+                      const SizedBox(height: 20),
+                      ElevatedButton(
+                        onPressed: _openSettings,
+                        child: const Text('Abrir ajustes'),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          }
+
           final weather = snapshot.data ?? _currentWeather;
           if (weather == null && snapshot.connectionState != ConnectionState.done) {
             return Container(
@@ -327,7 +472,21 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
               child: Center(
                 child: Padding(
                   padding: const EdgeInsets.all(16.0),
-                  child: Text('Error: ${snapshot.error}', style: const TextStyle(color: Colors.white)),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        _userFriendlyError(snapshot.error),
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(color: Colors.white),
+                      ),
+                      const SizedBox(height: 12),
+                      TextButton(
+                        onPressed: _openSettings,
+                        child: const Text('Abrir ajustes', style: TextStyle(color: Colors.white)),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             );
@@ -400,6 +559,17 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                         ),
                       ),
                     ),
+                    if (_lastUpdated != null) ...[
+                      const SizedBox(height: 6),
+                      Text(
+                        'Ultima actualizacion: ${_dateTimeLabel(_lastUpdated!)}',
+                        style: GoogleFonts.manrope(
+                          fontSize: 11,
+                          color: Colors.white70,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ),
@@ -454,6 +624,8 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                       setState(() {
                         _selected = s;
                         _weatherFuture = future;
+                        _currentWeather = null;
+                        _lastUpdated = null;
                       });
                       _historyCache.clear();
                       future.then((weather) {
@@ -461,8 +633,16 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                         setState(() {
                           _currentWeather = weather;
                           _now = DateTime.now();
+                          _lastUpdated = DateTime.now();
                         });
                         _updateWidget(weather);
+                      }).catchError((e) {
+                        if (!mounted) return;
+                        setState(() {
+                          _weatherFuture = Future.error(e);
+                          _currentWeather = null;
+                        });
+                        _showError(_userFriendlyError(e));
                       });
                       if (_tabController.index == 1) {
                         _loadHistory();
@@ -730,11 +910,17 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                           items: const [
                             DropdownMenuItem(value: HistoryPeriod.day, child: Text('Día')),
                             DropdownMenuItem(value: HistoryPeriod.week, child: Text('Semana')),
-                            DropdownMenuItem(value: HistoryPeriod.month, child: Text('Mes')),
                           ],
                           onChanged: (p) {
                             if (p == null) return;
-                            setState(() => _historyPeriod = p);
+                            setState(() {
+                              _historyPeriod = p;
+                              if (p == HistoryPeriod.week) {
+                                final now = DateTime.now();
+                                _historyDate = now;
+                                _historyWeek = _weekIndexForDate(now);
+                              }
+                            });
                             _loadHistory();
                           },
                         ),
@@ -974,36 +1160,18 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
       );
     }
     if (_historyPeriod == HistoryPeriod.week) {
-      final ranges = _availableWeekRanges(_historyDate);
-      if (ranges.isEmpty) {
-        return Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: const Color(0xFFF3F4F6),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Text('Sin semanas', style: GoogleFonts.manrope(fontSize: 13)),
-        );
-      }
+      final range = _currentWeekRange();
       return Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
         decoration: BoxDecoration(
           color: const Color(0xFFF3F4F6),
           borderRadius: BorderRadius.circular(12),
         ),
-        child: DropdownButton<int>(
-          isExpanded: true,
-          underline: const SizedBox(),
-          value: _historyWeek.clamp(1, ranges.length),
-          items: List.generate(ranges.length, (i) {
-            final r = ranges[i];
-            return DropdownMenuItem(value: i + 1, child: Text(_rangeLabel(r.start, r.end)));
-          }),
-          onChanged: (w) {
-            if (w == null) return;
-            setState(() => _historyWeek = w);
-            _loadHistory();
-          },
+        child: TextButton(
+          onPressed: null,
+          child: Text(
+            _rangeLabel(range.start, range.end),
+            style: GoogleFonts.manrope(fontSize: 13, fontWeight: FontWeight.w600),
+          ),
         ),
       );
     }
@@ -1046,6 +1214,15 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     final today = DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day);
     final effectiveEnd = range.end.isAfter(today) ? today : range.end;
     return DateTimeRange(start: range.start, end: effectiveEnd);
+  }
+
+  int _weekIndexForDate(DateTime date) {
+    return ((date.day - 1) ~/ 7) + 1;
+  }
+
+  DateTimeRange _currentWeekRange() {
+    final now = DateTime.now();
+    return _effectiveWeekRange(now, _weekIndexForDate(now));
   }
 
   List<DateTimeRange> _availableWeekRanges(DateTime date) {

@@ -44,13 +44,14 @@
                     android:shadowDy="1"
                     android:shadowRadius="2" />
 
-                <TextView
+                <TextClock
                     android:id="@+id/w_time"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:textSize="11sp"
                     android:textColor="#CCFFFFFF"
-                    android:text="--:--"
+                    android:format24Hour="HH:mm dd/MM"
+                    android:format12Hour="hh:mm a dd/MM"
                     android:shadowColor="#80000000"
                     android:shadowDx="0"
                     android:shadowDy="1"

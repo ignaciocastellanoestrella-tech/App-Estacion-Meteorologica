@@ -19,22 +19,24 @@
             android:layout_height="wrap_content"
             android:layout_marginBottom="10dp">
 
-            <TextView
+            <TextClock
                 android:id="@+id/w_date"
                 android:layout_width="0dp"
                 android:layout_weight="1"
                 android:layout_height="wrap_content"
                 android:textSize="12sp"
                 android:textColor="#DDFFFFFF"
-                android:text="Jueves, 12 Feb" />
+                android:format24Hour="EEE, dd MMM"
+                android:format12Hour="EEE, dd MMM" />
 
-            <TextView
+            <TextClock
                 android:id="@+id/w_time"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:textSize="12sp"
                 android:textColor="#DDFFFFFF"
-                android:text="--:--" />
+                android:format24Hour="HH:mm"
+                android:format12Hour="hh:mm a" />
 
             <ImageView
                 android:id="@+id/w_refresh"

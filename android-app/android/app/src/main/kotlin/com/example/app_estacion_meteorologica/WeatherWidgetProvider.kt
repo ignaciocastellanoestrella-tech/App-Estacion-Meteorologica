@@ -52,7 +52,6 @@ open class WeatherWidgetProvider : AppWidgetProvider() {
             // Current date and time
             val currentTime = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
             val currentDate = SimpleDateFormat("EEEE, dd MMM", Locale("es", "ES")).format(Date())
-            val currentShortDate = SimpleDateFormat("dd/MM", Locale.getDefault()).format(Date())
             
             // Read values with fallbacks
             fun getPref(key: String): String? {
@@ -113,13 +112,6 @@ open class WeatherWidgetProvider : AppWidgetProvider() {
             safeSetImageResource(views, R.id.w_icon, iconRes)
             
             // Set date and time
-            val timeLabel = when (layoutId) {
-                R.layout.widget_medium, R.layout.widget_medium_transparent -> "$currentTime $currentShortDate"
-                else -> currentTime
-            }
-            safeSetText(views, R.id.w_time, timeLabel)
-            safeSetText(views, R.id.w_date, currentDate)
-
             val updatedLabel = when (layoutId) {
                 R.layout.widget_large, R.layout.widget_large_transparent -> "Act. $updatedAtDate $updatedAtTime"
                 R.layout.widget_medium, R.layout.widget_medium_transparent -> "Act. $updatedAtDate $updatedAtTime"

@@ -12,13 +12,14 @@
         android:padding="12dp"
         android:gravity="center">
 
-        <TextView
+        <TextClock
             android:id="@+id/w_time"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:textSize="12sp"
             android:textColor="#E0FFFFFF"
-            android:text="--:--"
+            android:format24Hour="HH:mm"
+            android:format12Hour="hh:mm a"
             android:layout_marginBottom="4dp" />
 
         <ImageView

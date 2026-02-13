@@ -41,13 +41,14 @@
                     android:textColor="#FFFFFF"
                     android:text="--°" />
 
-                <TextView
+                <TextClock
                     android:id="@+id/w_time"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:textSize="11sp"
                     android:textColor="#CCFFFFFF"
-                    android:text="--:--" />
+                    android:format24Hour="HH:mm dd/MM"
+                    android:format12Hour="hh:mm a dd/MM" />
 
             </LinearLayout>
 
